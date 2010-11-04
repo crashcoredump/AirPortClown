@@ -37,11 +37,13 @@
 @interface AirPortClownAppDelegate : NSObject <NSApplicationDelegate> {
   // Declaring Outlets
   NSWindow *window;
+  NSWindow *prefWindow;
   NSDrawer *drawer;
   NSArrayController *vendorController;
   NSTextField *addressLabel;
   NSTextField *statusLabel;
   NSTextField *addressField;
+  NSPopUpButton *interfaceBox;
   NSSearchField *vendorSearch;
   NSButton *applyButton;
   NSButton *randomButton;
@@ -52,11 +54,13 @@
 
 // Properties for Outlets
 @property (nonatomic, retain) IBOutlet NSWindow *window;
+@property (nonatomic, retain) IBOutlet NSWindow *prefWindow;
 @property (nonatomic, retain) IBOutlet NSDrawer *drawer;
 @property (nonatomic, retain) IBOutlet NSArrayController *vendorController;
 @property (nonatomic, retain) IBOutlet NSTextField *addressLabel;
 @property (nonatomic, retain) IBOutlet NSTextField *statusLabel;
 @property (nonatomic, retain) IBOutlet NSTextField *addressField;
+@property (nonatomic, retain) IBOutlet NSPopUpButton *interfaceBox;
 @property (nonatomic, retain) IBOutlet NSSearchField *vendorSearch;
 @property (nonatomic, retain) IBOutlet NSButton *applyButton;
 @property (nonatomic, retain) IBOutlet NSButton *randomButton;
@@ -69,8 +73,11 @@
 - (void) verifyChangedMAC:(id)sender;
 - (NSString*) getCurrentMAC;
 - (NSDictionary*) getAirPortStatus;
+- (NSString*) currentInterface;
+- (NSArray*) getInterfaces;
 - (NSString*) generateRandomMAC;
 - (NSString*) sanitizeMACAddress:(id)sender;
+- (IBAction) savePreferences:(id)sender;
 - (IBAction) updateCurrentMAC:(id)sender;
 - (IBAction) randomizeMAC:(id)sender;
 - (void) applyVendorID:(NSString*)vendorID;

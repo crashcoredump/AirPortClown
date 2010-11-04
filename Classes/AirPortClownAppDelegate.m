@@ -52,10 +52,11 @@ BOOL vendorsLoaded = NO;
 @implementation AirPortClownAppDelegate
 
 // These variables hold the objects in our GUI
-@synthesize window, drawer;                           // Windows and their Drawers
+@synthesize window, drawer, prefWindow;               // Windows and their Drawers
 @synthesize vendorController;                         // Other Controllers
 @synthesize addressLabel, statusLabel;                // Labels (i.e. TextFields not intended for edit)
 @synthesize addressField, vendorSearch;               // TextFields and SearchFields
+@synthesize interfaceBox;
 @synthesize applyButton, randomButton, vendorButton;  // Buttons
 @synthesize randomSlider, activityIndicator;          // Other fancy GUI items
 
@@ -79,6 +80,21 @@ BOOL vendorsLoaded = NO;
     [self log:@"Oops, could not initiate the authorization reference"];
   }
   
+  // Loading all available interfaces and populating the combo box in the
+  // preferences pane with them.
+  NSArray *interfaces = [self getInterfaces];
+  [interfaceBox addItemWithTitle:@"(Auto)"];
+  [interfaceBox addItemsWithTitles:interfaces];
+
+  // Setting the default application preferences
+  NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
+  [dictionary setObject:@"(Auto)" forKey:@"Interface"];
+  [[NSUserDefaultsController sharedUserDefaultsController] setInitialValues:dictionary];
+  
+  
+  
+  
+  
   // At first we would like to show the current MAC address to the user ASAP.
   [self updateCurrentMAC:nil];
   
@@ -98,7 +114,11 @@ BOOL vendorsLoaded = NO;
   // So we register here for the window telling us that it is about to be closed.
   // And whenever it tells us that it's going to close, we'll simply exit AirPortClown.
   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowWillClose:) name:NSWindowWillCloseNotification object:window];
-  
+
+  // Ensuring that the preferences window doesn't show nonesense. So we load the
+  // values each time the preferences window get's the focus
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(preferencesOpened:) name:NSWindowDidBecomeMainNotification object:prefWindow];
+
   // We have quite a big list of MAC-prefixes and the corresponding vendor.
   // If we would load it synchronously, it would block our application for some seconds.
   // That's why we run a separate Thread now that will handle populating the Table in the Drawer.
@@ -210,7 +230,7 @@ BOOL vendorsLoaded = NO;
   //[self log:@"Putting together the ifconfig command parameters"];
   char *command = "/sbin/ifconfig";
   // There is a compiler warning for the next line that we're loosing our pointer by this. Of course we do!
-  char *arguments[] = {"en1", "ether", [[addressField stringValue] UTF8String]};  
+  char *arguments[] = {[[self currentInterface] UTF8String], "ether", [[addressField stringValue] UTF8String]};  
 
   // Do the magic. 
   //[self log:[[NSString alloc] initWithFormat:@"Requesting privileges for <ifconfig en1 ether %@>", [addressField stringValue]]];
@@ -308,7 +328,7 @@ BOOL vendorsLoaded = NO;
   
   // Configuring the ifconfig command
   [ifconfig setLaunchPath: @"/sbin/ifconfig"];
-  [ifconfig setArguments: [NSArray arrayWithObjects: @"en1", nil]];
+  [ifconfig setArguments: [NSArray arrayWithObjects: [self currentInterface], nil]];
   [ifconfig setStandardOutput: pipe];
   // Starting the Task
   [ifconfig launch];
@@ -340,6 +360,41 @@ BOOL vendorsLoaded = NO;
   // The "airport" command is so kind to provide us with a plist result, that can be turned into an NSDictionary.
   NSDictionary *airportStatus = [NSPropertyListSerialization propertyListFromData:data mutabilityOption:NSPropertyListMutableContainers format:nil errorDescription:nil];
   return airportStatus;
+}
+
+- (NSString*) currentInterface {
+  NSDictionary *prefsValues = [[NSUserDefaultsController sharedUserDefaultsController] values];
+  NSString *chosenInterface = [prefsValues valueForKey:@"Interface"];
+  if ([chosenInterface isEqualToString:@"(Auto)"]) {
+    return @"en1";
+  } else {
+    return chosenInterface;
+  }
+}
+
+/* 
+ * 
+ */
+- (NSArray*) getInterfaces {
+	// This command follows the same structure as in "getCurrentMAC".
+	// I refer you to the comments in that method instead of copying them over here.
+	NSTask *ifconfig = [[NSTask alloc] init];
+	NSPipe *pipe = [NSPipe pipe];
+	NSFileHandle *file = [pipe fileHandleForReading];
+	
+	[ifconfig setLaunchPath: @"/sbin/ifconfig"];
+	[ifconfig setArguments: [NSArray arrayWithObjects: @"-lu", nil]];    // -lu will show all Interfaces that are UP
+	[ifconfig setStandardOutput: pipe];
+	[ifconfig launch];
+	
+	NSData *data = [file readDataToEndOfFile];
+	NSString *cmdResult = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+  // Removing some unwanted interfaces and the newline character
+  cmdResult = [cmdResult stringByReplacingOccurrencesOfString:@"lo0 " withString:@""];
+  cmdResult = [cmdResult stringByReplacingOccurrencesOfString:@"lo1 " withString:@""];
+  cmdResult = [cmdResult stringByReplacingOccurrencesOfString:@"\n" withString:@""];
+	NSArray *interfaces = [cmdResult componentsSeparatedByString:@" "]; 
+	return interfaces;
 }
 
 /* Some MAC address roulette.
@@ -379,6 +434,22 @@ BOOL vendorsLoaded = NO;
 /*******************************************
  * These are our Interface Builder Actions *
  *******************************************/
+
+- (void) preferencesOpened:(id)sender {
+  NSLog(@"Applying prefereces stored in the system to the preferences GUI");
+  NSDictionary *prefsValues = [[NSUserDefaultsController sharedUserDefaultsController] values];
+  NSString *prefInterface = [prefsValues valueForKey:@"Interface"];
+  [interfaceBox selectItemWithTitle:prefInterface];
+}
+
+- (IBAction) savePreferences:(id)sender {
+  NSLog(@"Saving Preferences");
+  id currentPrefsValues = [[NSUserDefaultsController sharedUserDefaultsController] values];
+  // Current Interface
+	[currentPrefsValues setValue:[[interfaceBox selectedItem] title] forKey:@"Interface"];
+  // "Updating" the rest of the application
+  [self updateCurrentMAC:nil];
+}
 
 
 /* This method updates the text label that shows the
@@ -497,12 +568,10 @@ BOOL vendorsLoaded = NO;
 }
 
 /*
- * This method gets called when the main window is about to close.
- * In that case we would just like to quit the application altogether.
- */
-- (void) windowWillClose:(id)sender {
-  exit(0);
+- (void) prefWindowWillClose:(id)sender {
+  [prefWindow ...];
 }
+*/
 
 /* A wrapper so that we can guide the internal debugging log
  * message somewhere. Currently, it all goes out to NSLog.
