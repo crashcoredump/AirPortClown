@@ -9,6 +9,11 @@ h3. Features
 * Randomizing the MAC-suffix (aka Device-ID) for the given prefix 
 * Applying the MAC address via +ifconfig+ (requires superuser privileges)
 
+h3. Release Notes
+
+* 2.1: Added a preferences pane to be able to choose the interface
+* 2.0: The app is alive and is supposed to replace the AppleScript version which I call 1.0 as of now.
+
 h3. Community
 
 * I'm happy about patches. Please fork and send me a pull request.
