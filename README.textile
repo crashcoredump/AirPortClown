@@ -1,4 +1,8 @@
-h1. AirPortClown
+h1. Mac OS X Lion or higher attention please
+
+You might want to try [LinkLiar](http://github.com/funkensturm/LinkLiar) instead.
+
+h1. AirPortClown for (Snow Leopard)
 
 AirPortClown is a MAC address spoofing tool for Mac OS X. It's open-source and doesn't cost anything.
 
