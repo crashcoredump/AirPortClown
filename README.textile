@@ -1,6 +1,6 @@
 h1. Mac OS X Lion or higher attention please
 
-You might want to try [LinkLiar](http://github.com/funkensturm/LinkLiar) instead.
+You might want to try http://github.com/funkensturm/LinkLiar instead.
 
 h1. AirPortClown for (Snow Leopard)
 
